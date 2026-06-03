@@ -1,5 +1,36 @@
 # Review Guidelines
 
+## Future Test Coverage
+
+現時点では、MVPのAPI契約とエラーハンドリングを優先してFeature Testを追加する。
+
+以下のテストは、対応する機能を実装した段階で追加する。
+
+### Cost Control Tests
+
+* `AI_MAX_INPUT_LENGTH` を超えた入力が422で拒否されること
+* `AI_MAX_OUTPUT_TOKENS` がOpenAI APIリクエストへ渡ること
+* `OPENAI_MODEL_DEFAULT` が通常機能で利用されること
+* `OPENAI_MODEL_REVIEW` がAIレビュア機能で利用されること
+* `AI_DEMO_MODE=true` の場合にOpenAI APIを呼ばないこと
+* `AI_RATE_LIMIT_PER_DAY` を超えた場合にリクエストが制限されること
+
+### Unit Tests
+
+* `OpenAiService` がデモレスポンスを返す条件
+* featureごとのsystem prompt選択
+* OpenAI APIへ送るpayloadの構造
+* OpenAI API失敗時の例外変換
+* 入力文字数や出力トークン上限の設定反映
+
+### Current Gap
+
+現時点では、コスト制御テストと細かいUnit Testはまだ実装していない。
+
+理由は、まずAPI契約、デモモード、バリデーション、エラーハンドリングを優先しているため。
+
+AI機能の個別実装、コスト制御設定、利用量制限を実装するタイミングで、上記テストを追加する。
+
 ## 目的
 
 AI Delivery Assistant のコードレビュー観点を整理し、将来的なAIレビュア機能のプロンプトやレビュー基準として利用する。

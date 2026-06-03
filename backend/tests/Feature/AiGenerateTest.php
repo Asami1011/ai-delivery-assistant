@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AiGenerateTest extends TestCase
@@ -62,6 +63,32 @@ class AiGenerateTest extends TestCase
             ->assertJsonValidationErrors([
                 'feature',
                 'input',
+            ]);
+    }
+
+    public function test_openai_api_failures_are_json(): void
+    {
+        Config::set('services.openai.api_key', 'test-api-key');
+        Http::fake([
+            '*' => Http::response([
+                'error' => [
+                    'message' => 'Upstream failure',
+                ],
+            ], 500),
+        ]);
+
+        $response = $this->postJson('/api/ai/generate', [
+            'feature' => 'requirements',
+            'input' => 'AI delivery assistant project',
+        ]);
+
+        $response
+            ->assertStatus(503)
+            ->assertJson([
+                'message' => 'AI generation failed.',
+                'errors' => [
+                    'detail' => 'OpenAI API request failed with status 500.',
+                ],
             ]);
     }
 }

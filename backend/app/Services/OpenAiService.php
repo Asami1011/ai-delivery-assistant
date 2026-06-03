@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Exceptions\AiGenerationException;
 use Illuminate\Support\Facades\Http;
-use RuntimeException;
 
 class OpenAiService
 {
@@ -43,16 +43,16 @@ class OpenAiService
                     ],
                 ],
                 'temperature' => 0.2,
-            ]);
+        ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('OpenAI API request failed with status '.$response->status().'.');
+            throw new AiGenerationException('OpenAI API request failed with status '.$response->status().'.');
         }
 
         $content = data_get($response->json(), 'choices.0.message.content');
 
         if (! is_string($content) || trim($content) === '') {
-            throw new RuntimeException('OpenAI API response did not include generated content.');
+            throw new AiGenerationException('OpenAI API response did not include generated content.');
         }
 
         return [

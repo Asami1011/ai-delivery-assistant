@@ -1,5 +1,52 @@
 # Architecture
 
+## Application Design Policy
+
+本プロジェクトでは、MVP段階では Laravel の MVC 構成を基本とし、Controller / Form Request / Service / Model の責務分離を優先する。
+
+現時点では DDD を全面採用しない。理由は、まだ複雑な業務ルール、複数集約、課金、権限、ワークスペース、履歴管理などのドメイン境界が十分に固まっていないため。
+
+ただし、将来的な SaaS 化や機能拡張に備えて、DDD へ移行しやすい構成を意識する。
+
+基本方針:
+
+* Controller に業務ロジックを書かない
+* 入力検証は Form Request に分離する
+* AI生成や外部API連携は Service クラスに分離する
+* 保存処理が増えたら Repository / UseCase の導入を検討する
+* 課金、ユーザー管理、ワークスペース管理、履歴管理が複雑化した段階で Domain / Application / Infrastructure の分離を検討する
+* DDD は最初から大きく導入せず、必要になった領域から段階的に採用する
+
+将来的な移行イメージ:
+
+```text
+backend/app/
+├─ Domain/
+│  └─ AiGeneration/
+├─ Application/
+│  └─ AiGeneration/
+├─ Infrastructure/
+│  └─ OpenAI/
+└─ Http/
+   ├─ Controllers/
+   └─ Requests/
+```
+
+# AI Cost Optimization Architecture
+
+本システムでは将来的なAI利用料増加に備え、以下の設計方針を採用する。
+
+* Frontend から直接AI APIを呼ばない
+* Laravel Backend経由でAI APIを利用する
+* AI処理は Serviceクラスへ集約する
+* モデル名は環境変数で切り替え可能にする
+* 機能ごとに利用モデルを変更できる構成にする
+* 入力文字数制限を設ける
+* 出力トークン上限を設ける
+* キャッシュ追加可能な構成にする
+* レートリミット追加可能な構成にする
+* 利用量ログ追加可能な構成にする
+
 ## 概要
 
 ai-delivery-assistant は、Next.js 15、Laravel 12、PostgreSQL、OpenAI APIを中心に構成するAI開発支援プラットフォームです。

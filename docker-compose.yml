@@ -20,6 +20,7 @@ services:
     environment:
       APP_NAME: ai-delivery-assistant
       APP_ENV: local
+      APP_KEY: ${APP_KEY:-base64:bG9jYWwtZGV2LW9ubHkta2V5LTEyMzQ1Njc4OTBhYmM=}
       APP_DEBUG: "true"
       APP_URL: http://localhost:8000
       FRONTEND_URL: http://localhost:3000
@@ -31,7 +32,7 @@ services:
       DB_PASSWORD: postgres
       DATABASE_URL: postgresql://postgres:postgres@db:5432/ai_delivery_assistant
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     volumes:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor

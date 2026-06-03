@@ -1,5 +1,10 @@
 # ai-delivery-assistant
 
+## Documents
+
+- [Development Guide](docs/development.md)
+- [Cost Strategy](docs/cost.md)
+
 ## プロジェクト概要
 
 AIを活用して、要件定義、タスク分解、コードレビュー、業務改善提案を支援する開発支援プラットフォームです。

@@ -1,5 +1,31 @@
 # Cost Strategy
 
+## Cost Control Test Policy
+
+現時点では、コスト制御に関する細かいテストはまだ実装していない。
+
+MVP初期では、APIキー未設定時のデモモード、API契約、エラーハンドリングのFeature Testを優先する。
+
+以下の機能を実装したタイミングで、コスト制御テストを追加する。
+
+* 入力文字数制限
+* 出力トークン上限
+* モデル名の環境変数切り替え
+* AIレビュア専用モデル
+* デモモード強制設定
+* レートリミット
+* 利用量ログ
+* 月間利用上限
+
+追加予定のテスト:
+
+* `AI_MAX_INPUT_LENGTH` を超える入力が拒否されること
+* `AI_MAX_OUTPUT_TOKENS` がOpenAI APIリクエストに反映されること
+* `OPENAI_MODEL_DEFAULT` が通常のAI機能で使われること
+* `OPENAI_MODEL_REVIEW` がAIレビュアで使われること
+* `AI_DEMO_MODE=true` の場合、OpenAI APIを呼び出さないこと
+* `AI_RATE_LIMIT_PER_DAY` を超えたリクエストが制限されること
+
 ## 概要
 
 本アプリは OpenAI API を利用するため、AI生成回数や入力文字数に応じてAPI利用料が発生する。

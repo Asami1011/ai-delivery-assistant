@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
-import path from "node:path";
 
 const nextConfig: NextConfig = {
-  outputFileTracingRoot: path.join(__dirname),
+  devIndicators: false,
+  distDir: process.env.NODE_ENV === "production" ? ".next-build" : ".next",
 };
 
 export default nextConfig;

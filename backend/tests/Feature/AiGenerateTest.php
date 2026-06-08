@@ -14,13 +14,23 @@ class AiGenerateTest extends TestCase
 
         $response = $this->postJson('/api/ai/generate', [
             'feature' => 'requirements',
-            'input' => 'AI delivery assistant project',
+            'input' => json_encode([
+                'product_name' => 'AI Delivery Assistant',
+                'background' => '要件定義からタスク分解までを支援したい。',
+                'problem' => '初期整理に時間がかかる。',
+                'target_users' => '個人開発者',
+                'goal' => '要件定義の初稿を短時間で作りたい。',
+                'constraints' => 'MVPでは最小構成。',
+                'output_level' => 'standard',
+                'notes' => 'ポートフォリオ用途。',
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ]);
 
         $response
             ->assertOk()
             ->assertJsonPath('data.feature', 'requirements')
             ->assertJsonPath('data.mode', 'demo')
+            ->assertJsonPath('data.model', config('services.openai.model'))
             ->assertJsonPath('meta.stored', false)
             ->assertJsonStructure([
                 'data' => [
@@ -33,6 +43,13 @@ class AiGenerateTest extends TestCase
                     'stored',
                 ],
             ]);
+
+        $outputMarkdown = $response->json('data.output_markdown');
+
+        $this->assertIsString($outputMarkdown);
+        $this->assertStringContainsString('## 機能要件', $outputMarkdown);
+        $this->assertStringContainsString('## 非機能要件', $outputMarkdown);
+        $this->assertStringContainsString('## 未確定事項', $outputMarkdown);
     }
 
     public function test_validates_feature_and_input(): void

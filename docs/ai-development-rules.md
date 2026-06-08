@@ -59,6 +59,20 @@ WBS上の次タスク。
 
 Codexがブランチをpushした場合は、その時点でpushした内容をまとめ、可能な限りPull Requestの作成まで実施すること。
 
+PRのbaseブランチは、原則として最終的なマージ先である `main` とする。
+
+ただし、別PRで先にmainへ入れる前提の共通基盤ブランチや先行機能ブランチに依存している場合は、PR作成前に以下を確認すること。
+
+- `main` をbaseにしたときに意図しない差分が含まれていないか
+- 先行ブランチを先にmainへmergeすべきか
+- 一時的に先行ブランチをbaseにしたstacked PRにすべきか
+
+最終的にmainへ入れるPRでは、mainとの差分がレビュー対象になる。差分が大きい場合でも、意図した依存差分であればmain baseで問題ない。
+
+PR作成直前のファイル確認は、GitHub画面の折り畳み表示や目視だけに頼らないこと。
+
+必ずGitHub API、`git diff --name-status <base>...HEAD`、またはGitHub connectorのchanged files取得結果を使い、実際の変更ファイル一覧を確認してからPR本文へ反映する。
+
 PR作成時は、以下を含むMarkdown形式の本文を作成してGitHub Pull Requestへ設定する。
 
 - PRタイトル

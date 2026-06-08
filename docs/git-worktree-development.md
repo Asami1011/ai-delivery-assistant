@@ -135,6 +135,8 @@ DB_DATABASE: ${DB_DATABASE:-ai_delivery_assistant}
 DATABASE_URL: postgresql://postgres:postgres@db:5432/${DB_DATABASE:-ai_delivery_assistant}
 ```
 
+backend起動時に対象DBが無ければ自動作成するようにしておくと、既存volumeを使ったままでもWorktreeごとのDB切り替えがしやすい。
+
 この構成にすると、あるWorktreeで追加したマイグレーションが他のWorktreeやmain確認用DBへ直接影響しにくくなる。
 
 ## Verification Flow

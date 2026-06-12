@@ -284,6 +284,77 @@ docker compose --env-file .env.worktree exec backend php artisan migrate
 
 この構成にすると、あるWorktreeで追加したマイグレーションが他のWorktreeやmain確認用DBへ直接影響しにくくなる。
 
+## Database Access And Switching
+
+現在どのDBを使っているかは、各Worktree直下の `.env.worktree` の `DB_DATABASE` で決まる。
+
+```powershell
+Get-Content .env.worktree
+```
+
+特定のWorktree用DBへ接続したい場合:
+
+```powershell
+docker compose --env-file .env.worktree exec db psql -U postgres -d ai_delivery_assistant_task_breakdown
+```
+
+現在あるWorktree用DBの一覧を見たい場合:
+
+```powershell
+docker compose exec -T db psql -U postgres -d postgres -tAc "SELECT datname FROM pg_database WHERE datname LIKE 'ai_delivery_assistant%';"
+```
+
+別のDBへ切り替えたい場合は、対象Worktreeの `.env.worktree` の `DB_DATABASE` を変更してから、Dockerを起動し直す。
+
+```powershell
+docker compose --env-file .env.worktree up -d --force-recreate
+docker compose --env-file .env.worktree exec backend php artisan migrate
+```
+
+標準マッピングを使う場合は、手動編集ではなく `scripts/generate-worktree-env.mjs` を使い直す方が安全。
+
+```powershell
+node scripts/generate-worktree-env.mjs --force
+```
+
+この運用では、Worktreeを切り替えてもPostgreSQLコンテナ自体は同じままで、接続先DB名だけが変わる。
+
+## Database Lifecycle
+
+Worktree用DBは、backend起動時に必要なら自動作成される。
+
+ただし、Worktreeを削除してもDBは自動では削除されない。
+
+つまり、以下の認識が正しい。
+
+- Worktreeを作る
+- `.env.worktree` の `DB_DATABASE` に応じてDBが作成される
+- Worktreeを削除しても、そのDBはPostgreSQLコンテナ内に残る
+
+不要になったDBは、明示的に削除する。
+
+例:
+
+```powershell
+docker compose exec -T db psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS ai_delivery_assistant_task_breakdown;"
+```
+
+Worktree削除時の推奨手順:
+
+1. Worktreeを停止する
+2. 不要なWorktreeを削除する
+3. 対応するDBを削除する
+
+例:
+
+```powershell
+docker compose --env-file ..\ai-delivery-assistant-task\.env.worktree -f ..\ai-delivery-assistant-task\docker-compose.yml down
+git worktree remove ..\ai-delivery-assistant-task
+docker compose exec -T db psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS ai_delivery_assistant_task_breakdown;"
+```
+
+テスト用Worktreeや検証用DBを一時的に作った場合も、同じ手順で片付ける。
+
 ## Verification Flow
 
 Worktree切り替え後は、以下を基本確認とする。

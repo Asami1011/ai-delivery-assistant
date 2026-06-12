@@ -1,5 +1,13 @@
 # AI Development Rules
 
+## Canonical Source
+
+このドキュメントの正本は `C:\Users\asami\projects\ai-delivery-assistant-common\docs\ai-development-rules.md` とする。
+
+Codexは開発着手前に、可能であればワークスペースを `C:\Users\asami\projects` として開始し、`ai-delivery-assistant-common` を同時に参照できる状態にすること。
+
+ワークスペースが `C:\Users\asami\projects\ai-delivery-assistant` のように単一repo配下で開始された場合でも、このローカルコピーだけで判断せず、共通repo側の正本も確認してから作業すること。
+
 ## コミット依頼時
 
 Codexはコミットを実行する前に、現在のブランチ名を確認すること。
@@ -19,24 +27,6 @@ commit、push、PR作成へ進む前に、実施した確認内容と結果を�
 実装依頼を受けた場合は、実装完了後にまず変更内容をまとめたテキストを返し、その時点ではcommit、push、PR作成を行わないこと。
 
 ユーザーによる検証完了とOKの確認後に、commit、push、必要に応じてPR作成へ進むこと。
-
-## 開発着手前
-
-Codexは今後すべての開発タスクで、実装に入る前に `docs/git-worktree-development.md` を確認し、対象機能に対応したブランチ、Worktree、Worktree用DBを用意すること。
-
-原則として、機能開発は `1 Worktree = 1機能 = 1ブランチ = 1PR` で進める。
-
-着手前の標準手順は以下とする。
-
-1. 対象機能に対応するWorktreeとブランチを確認する。
-2. Worktreeが未作成の場合は `scripts/create-worktree.mjs` を使って作成する。
-3. 作成または選択したWorktreeへ移動する。
-4. `.env.worktree` の `DB_DATABASE` が対象機能のDB名になっていることを確認する。
-5. Docker Composeを `.env.worktree` 付きで起動し、対象WorktreeのコードとDBへ切り替える。
-6. 対象DBを作成または確認し、必要なmigrationを実行する。
-7. `api/health`、Docker起動状態、必要に応じてlint/build/testを確認してから実装に入る。
-
-共通基盤の変更は、機能Worktreeへ混ぜず、共通基盤用Worktreeと共通基盤用ブランチで行うこと。
 
 ## 作業完了時
 

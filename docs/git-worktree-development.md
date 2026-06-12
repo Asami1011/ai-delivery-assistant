@@ -1,5 +1,13 @@
 # Git Worktree Development Guide
 
+## Canonical Source
+
+このドキュメントの正本は `C:\Users\asami\projects\ai-delivery-assistant-common\docs\git-worktree-development.md` とする。
+
+Codexは可能であればワークスペースを `C:\Users\asami\projects` として開始し、各Worktreeと `ai-delivery-assistant-common` を同じ作業コンテキストで参照すること。
+
+ワークスペースが単一repo配下で始まっている場合でも、実装前に共通repo側の正本を確認し、対象機能のWorktree、ブランチ、DB方針をそちらに合わせること。
+
 ## Purpose
 
 機能開発では、Git Worktreeを使って複数の機能ブランチを並行して進める。
@@ -79,32 +87,6 @@ docker compose --env-file .env.worktree ps
 - DBはPostgreSQLコンテナを共有しつつ、WorktreeごとにDB名を分ける。
 - ローカル動作確認のために毎回remoteへpush/pullする必要はない。
 - remoteへのpushは、レビュー、バックアップ、PR作成、統合確認のために行う。
-
-## Mandatory Start Procedure
-
-今後すべての開発タスクでは、実装前にブランチ作成、Worktree作成、Worktree用DB作成または確認を含める。
-
-Codexが開発タスクを担当する場合も、この手順を省略しない。既存Worktreeを使う場合でも、対象ブランチ、作業ディレクトリ、`.env.worktree` の `DB_DATABASE`、Dockerの接続先DBを確認してから実装に入る。
-
-標準手順:
-
-1. 対象機能に対応するWorktreeとブランチを確認する。
-2. Worktreeが未作成の場合は `node scripts/create-worktree.mjs --feature <preset>` で作成する。
-3. 作成されたWorktreeへ移動する。
-4. `.env.worktree` の `DB_DATABASE` が対象機能のDB名になっていることを確認する。
-5. `docker compose --env-file .env.worktree up -d --force-recreate` でDockerを対象Worktreeへ切り替える。
-6. backend起動時のDB自動作成を確認し、`docker compose --env-file .env.worktree exec backend php artisan migrate` を実行する。
-7. `docker compose --env-file .env.worktree ps` と `http://localhost:8000/api/health` を確認する。
-
-例: AIタスク分解機能を始める場合
-
-```powershell
-node scripts/create-worktree.mjs --feature task-breakdown
-cd ..\ai-delivery-assistant-task
-Get-Content .env.worktree
-docker compose --env-file .env.worktree up -d --force-recreate
-docker compose --env-file .env.worktree exec backend php artisan migrate
-```
 
 ## Recommended Worktree Layout
 

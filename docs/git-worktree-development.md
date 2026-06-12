@@ -235,6 +235,13 @@ node scripts/create-worktree.mjs --branch feature/my-new-feature --path ai-deliv
 
 CodexがWorktreeを作成する場合も、基本的にはこの手順に従う。新しい機能開発を依頼する際は、Codexが対象機能に対応したWorktreeを `scripts/create-worktree.mjs` で作成し、そのWorktree上で実装を進める。
 
+注意:
+
+- 標準マッピング表は「利用可能な定義一覧」であり、環境構築時に全Worktreeを一括作成するための一覧ではない
+- `scripts/create-worktree.mjs` は、実行時に指定した `--feature` または `--branch` のWorktreeだけを作成する
+- すでに開発が完了した機能や、今回使わない機能のWorktreeは自動では作成されない
+- 新しい環境を構築する場合も、その時点で必要なWorktreeだけを個別に作成する
+
 ## Docker Switching
 
 `docker-compose.yml` は `./frontend` と `./backend` を相対パスでbind mountしている。

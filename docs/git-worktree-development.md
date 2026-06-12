@@ -1,5 +1,13 @@
 # Git Worktree Development Guide
 
+## Canonical Source
+
+このドキュメントの正本は `C:\Users\asami\projects\ai-delivery-assistant-common\docs\git-worktree-development.md` とする。
+
+Codexは可能であればワークスペースを `C:\Users\asami\projects` として開始し、各Worktreeと `ai-delivery-assistant-common` を同じ作業コンテキストで参照すること。
+
+ワークスペースが単一repo配下で始まっている場合でも、実装前に共通repo側の正本を確認し、対象機能のWorktree、ブランチ、DB方針をそちらに合わせること。
+
 ## Purpose
 
 機能開発では、Git Worktreeを使って複数の機能ブランチを並行して進める。

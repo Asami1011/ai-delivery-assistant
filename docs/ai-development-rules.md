@@ -1,5 +1,13 @@
 # AI Development Rules
 
+## Canonical Source
+
+このドキュメントの正本は `C:\Users\asami\projects\ai-delivery-assistant-common\docs\ai-development-rules.md` とする。
+
+Codexは開発着手前に、可能であればワークスペースを `C:\Users\asami\projects` として開始し、`ai-delivery-assistant-common` を同時に参照できる状態にすること。
+
+ワークスペースが `C:\Users\asami\projects\ai-delivery-assistant` のように単一repo配下で開始された場合でも、このローカルコピーだけで判断せず、共通repo側の正本も確認してから作業すること。
+
 ## コミット依頼時
 
 Codexはコミットを実行する前に、現在のブランチ名を確認すること。

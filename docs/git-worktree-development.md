@@ -370,6 +370,27 @@ docker compose exec -T db psql -U postgres -d postgres -c "DROP DATABASE IF EXIS
 
 テスト用Worktreeや検証用DBを一時的に作った場合も、同じ手順で片付ける。
 
+## Cleanup Standard Flow
+
+機能PRが `main` へmergeされた後は、次の作業に入る前に以下の順でcleanupする。
+
+1. root の作業ディレクトリを `main` へ戻す
+2. `origin/main` を取得し、ローカル `main` を最新化する
+3. merge済みWorktreeを削除する
+4. merge済みlocal branchを削除する
+5. 必要に応じてmerge済みremote branchを削除する
+6. 不要になったWorktree用DBを削除する
+7. `git status` と `git worktree list` で、次の作業の起点が `main` だけになっていることを確認する
+
+Cleanup時の基本方針:
+
+- まず `main` を作業起点へ戻す
+- merge済みの一時Worktreeは引き続き保持しない
+- DBはWorktree削除後も残るため、不要なら明示的に削除する
+- docs更新だけの小さな追従作業でも、不要な古いWorktreeを残したまま次へ進まない
+
+`feature/common-foundation-worktree` のように、内容は `main` に入っていても履歴上は別SHAになる退役branchが残ることがある。この場合は未merge branchとして保持するのではなく、役目を終えたcleanup対象として扱ってよい。
+
 ## Verification Flow
 
 Worktree切り替え後は、以下を基本確認とする。

@@ -8,6 +8,42 @@ Codexは開発着手前に、可能であればワークスペースを `C:\User
 
 ワークスペースが `C:\Users\asami\projects\ai-delivery-assistant` のように単一repo配下で開始された場合でも、このローカルコピーだけで判断せず、共通repo側の正本も確認してから作業すること。
 
+## 着手前の提案
+
+ユーザーから「着手前に何をするか提案して」と依頼された場合、Codexは実装方針だけでなく、開発着手前の準備手順も提案に含めること。
+
+提案には、少なくとも以下を含めること。
+
+1. 現在のワークスペース確認と、必要に応じた `C:\Users\asami\projects` での作業前提の共有
+2. `C:\Users\asami\projects\ai-delivery-assistant-common\docs\ai-development-rules.md` と `C:\Users\asami\projects\ai-delivery-assistant-common\docs\git-worktree-development.md` の確認
+3. 対象機能に対応するブランチ名とWorktreeの作成または確認
+4. `.env.worktree` と `DB_DATABASE` の確認または生成
+5. 必要に応じた Docker 起動、`migrate`、`api/health` 確認
+6. その後に実施する実装・確認・検証の流れ
+
+着手前提案では、「どの docs を確認するか」「どの branch / Worktree / DB を使うか」が読み取れる状態にすること。
+
+着手前提案を文章で返す場合は、原則として以下の順に並べること。
+
+1. 確認する docs
+2. 使用する branch / Worktree
+3. 使用する `.env.worktree` / `DB_DATABASE`
+4. 起動・確認コマンド
+5. その後に進む実装対象
+
+ワークスペースが `C:\Users\asami\projects` ではない場合は、その事実を最初に伝えたうえで、共通repo側の正本確認を提案に含めること。
+
+ユーザーから実装着手の許可を得る前であっても、以下の準備作業を提案対象に含めてよい。
+
+- docs確認
+- branch / Worktree の確認または作成
+- `.env.worktree` の生成
+- Docker 起動
+- `migrate`
+- `api/health` 確認
+
+ただし、削除系操作、既存branchの履歴改変、不要DBの削除、他Worktreeのcleanupは、別途ユーザー確認が必要な操作として扱うこと。
+
 ## コミット依頼時
 
 Codexはコミットを実行する前に、現在のブランチ名を確認すること。

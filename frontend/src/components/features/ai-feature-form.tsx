@@ -7,6 +7,7 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
 import { Loading } from "@/components/ui/loading";
 import { MarkdownPreview } from "@/components/ui/markdown-preview";
+import { QuickPickList } from "@/components/ui/quick-pick-list";
 import { Textarea } from "@/components/ui/textarea";
 import { generateAi, type AiGenerateResult } from "@/lib/ai-client";
 import {
@@ -71,6 +72,26 @@ function buildInput(values: AiFeatureFormValues) {
   return Object.fromEntries(
     Object.entries(values).map(([key, value]) => [key, value.trim()]),
   ) as AiFeatureFormValues;
+}
+
+function appendPhrase(current: string, addition: string) {
+  const trimmedCurrent = current.trim();
+  const trimmedAddition = addition.trim();
+
+  if (trimmedAddition === "") {
+    return trimmedCurrent;
+  }
+
+  if (trimmedCurrent === "") {
+    return trimmedAddition;
+  }
+
+  if (trimmedCurrent.includes(trimmedAddition)) {
+    return trimmedCurrent;
+  }
+
+  const separator = trimmedCurrent.endsWith("。") || trimmedCurrent.endsWith("\n") ? "\n" : "、";
+  return `${trimmedCurrent}${separator}${trimmedAddition}`;
 }
 
 function FieldLabel({
@@ -229,6 +250,24 @@ export function AiFeatureForm({ config }: { config: AiFeatureFormConfig }) {
 
   function handleFillSample() {
     const sampleValues = buildValues(config, config.sampleValues);
+    applySampleValues(sampleValues);
+  }
+
+  function handleFillSampleForReviewType() {
+    const reviewType = values.review_type;
+    const preset =
+      config.samplePresets?.find((item) => item.values.review_type === reviewType) ??
+      config.samplePresets?.[0];
+
+    if (!preset) {
+      handleFillSample();
+      return;
+    }
+
+    applySampleValues(buildValues(config, preset.values));
+  }
+
+  function applySampleValues(sampleValues: AiFeatureFormValues) {
     setValues(sampleValues);
     window.localStorage.setItem(config.storageKey, JSON.stringify(sampleValues));
     const sampleErrors = validate(sampleValues, config.fields);
@@ -238,11 +277,23 @@ export function AiFeatureForm({ config }: { config: AiFeatureFormConfig }) {
     setResult(null);
   }
 
+  function handleAppendQuickPick(fieldName: string, addition: string) {
+    const nextValue = appendPhrase(values[fieldName] ?? "", addition);
+    const nextValues = { ...values, [fieldName]: nextValue };
+    setValues(nextValues);
+    window.localStorage.setItem(config.storageKey, JSON.stringify(nextValues));
+    setSubmitError(null);
+    setResult(null);
+
+    if (hasValidated) {
+      setErrors(validate(nextValues, config.fields));
+    }
+  }
+
   const isValid = Object.keys(errors).length === 0;
   const showValidationSummary = hasValidated && !isValid;
   const showReadyState =
     hasValidated && isValid && !isSubmitting && !submitError && result === null;
-
   return (
     <div className="grid items-start gap-6 overflow-x-hidden xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
       <Card className="min-w-0 overflow-hidden">
@@ -259,42 +310,60 @@ export function AiFeatureForm({ config }: { config: AiFeatureFormConfig }) {
             ) : null}
 
             <div className="grid gap-5 md:grid-cols-2">
-              {config.fields.map((field) => (
-                <label key={field.name} className={cn("grid gap-2", field.className)}>
-                  <FieldLabel required={field.required}>{field.label}</FieldLabel>
-                  {field.type === "input" ? (
-                    <Input
-                      maxLength={field.maxLength}
-                      onChange={(event) => updateField(field.name, event.target.value)}
-                      placeholder={field.placeholder}
-                      value={values[field.name] ?? ""}
-                    />
-                  ) : null}
-                  {field.type === "textarea" ? (
-                    <Textarea
-                      className={field.className}
-                      maxLength={field.maxLength}
-                      onChange={(event) => updateField(field.name, event.target.value)}
-                      placeholder={field.placeholder}
-                      value={values[field.name] ?? ""}
-                    />
-                  ) : null}
-                  {field.type === "select" ? (
-                    <select
-                      className={selectClass}
-                      onChange={(event) => updateField(field.name, event.target.value)}
-                      value={values[field.name] ?? ""}
-                    >
-                      {field.options?.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : null}
-                  <FieldHint error={errors[field.name]}>{field.hint}</FieldHint>
-                </label>
-              ))}
+              {config.fields.map((field) => {
+                if (field.type === "textarea") {
+                  return (
+                    <div key={field.name} className={cn("grid gap-2", field.className)}>
+                      <label className="grid gap-2">
+                        <FieldLabel required={field.required}>{field.label}</FieldLabel>
+                        <Textarea
+                          className={field.className}
+                          maxLength={field.maxLength}
+                          onChange={(event) => updateField(field.name, event.target.value)}
+                          placeholder={field.placeholder}
+                          value={values[field.name] ?? ""}
+                        />
+                      </label>
+                      {field.quickPicks?.length ? (
+                        <QuickPickList
+                          items={field.quickPicks}
+                          onPick={(value) => handleAppendQuickPick(field.name, value)}
+                          disabled={isSubmitting}
+                        />
+                      ) : null}
+                      <FieldHint error={errors[field.name]}>{field.hint}</FieldHint>
+                    </div>
+                  );
+                }
+
+                return (
+                  <label key={field.name} className={cn("grid gap-2", field.className)}>
+                    <FieldLabel required={field.required}>{field.label}</FieldLabel>
+                    {field.type === "input" ? (
+                      <Input
+                        maxLength={field.maxLength}
+                        onChange={(event) => updateField(field.name, event.target.value)}
+                        placeholder={field.placeholder}
+                        value={values[field.name] ?? ""}
+                      />
+                    ) : null}
+                    {field.type === "select" ? (
+                      <select
+                        className={selectClass}
+                        onChange={(event) => updateField(field.name, event.target.value)}
+                        value={values[field.name] ?? ""}
+                      >
+                        {field.options?.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    <FieldHint error={errors[field.name]}>{field.hint}</FieldHint>
+                  </label>
+                );
+              })}
             </div>
 
             <div className="grid gap-3">
@@ -302,15 +371,28 @@ export function AiFeatureForm({ config }: { config: AiFeatureFormConfig }) {
                 <Button type="submit" className="min-w-36" disabled={isSubmitting}>
                   {isSubmitting ? config.submittingLabel : config.submitLabel}
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleFillSample}
-                  className="min-w-32 border border-dashed border-neutral-300 bg-white text-neutral-700"
-                  disabled={isSubmitting}
-                >
-                  サンプル入力
-                </Button>
+                {config.samplePresets?.length ? (
+                  <Button
+                    type="button"
+                    variant="subtle"
+                    onClick={handleFillSampleForReviewType}
+                    className="min-w-32 px-4 text-sm shadow-sm"
+                    disabled={isSubmitting}
+                    title="レビュー対象の種類に合わせたサンプルを入力します。"
+                  >
+                    サンプル入力
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={handleFillSample}
+                    className="min-w-32 border border-dashed border-neutral-300 bg-white text-neutral-700"
+                    disabled={isSubmitting}
+                  >
+                    サンプル入力
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="secondary"

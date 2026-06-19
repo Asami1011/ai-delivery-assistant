@@ -66,6 +66,7 @@ https://api.example.com/api
 
 | メソッド | パス | 概要 |
 | --- | --- | --- |
+| POST | `/ai/generate` | 共通AI生成API |
 | POST | `/ai/requirements` | AI要件定義を生成する |
 | POST | `/ai/task-breakdown` | AIタスク分解を生成する |
 | POST | `/ai/github-issues` | GitHub Issue形式Markdownを生成する |
@@ -74,6 +75,37 @@ https://api.example.com/api
 | GET | `/generations` | AI生成履歴を取得する |
 | GET | `/generations/{id}` | AI生成履歴の詳細を取得する |
 | DELETE | `/generations/{id}` | AI生成履歴を削除する |
+
+## 共通AI生成API
+
+### POST `/ai/generate`
+
+MVPでは各機能専用APIの代わりに、共通のAI生成APIを利用する。
+
+リクエスト:
+
+```json
+{
+  "feature": "code_review",
+  "input": "{ \"review_type\": \"requirements\", \"technology\": \"Next.js / Laravel / PostgreSQL\", \"review_target\": \"...\", \"review_focus\": \"...\", \"context\": \"...\", \"output_level\": \"standard\", \"notes\": \"...\" }"
+}
+```
+
+レスポンス:
+
+```json
+{
+  "data": {
+    "feature": "code_review",
+    "mode": "demo",
+    "model": "gpt-4o-mini",
+    "output_markdown": "# レビュー結果..."
+  },
+  "meta": {
+    "stored": false
+  }
+}
+```
 
 ## AI要件定義API
 
@@ -195,21 +227,19 @@ AIタスク分解の結果から、GitHub Issue形式のMarkdownを生成しま�
 
 ### POST `/ai/code-review`
 
-コードや設計メモからレビュー結果を生成します。
+要件定義、タスク分解、コード差分、設計メモなどの成果物からレビュー結果を生成します。
 
 リクエスト:
 
 ```json
 {
-  "target_text": "レビュー対象のコードまたは設計メモ",
-  "technology": "Next.js, Laravel",
-  "review_points": [
-    "バグ",
-    "保守性",
-    "セキュリティ",
-    "テスト"
-  ],
-  "context": "MVP開発中"
+  "review_type": "requirements",
+  "technology": "Next.js / Laravel / PostgreSQL",
+  "review_target": "レビュー対象の要件定義、タスク分解、コード差分、設計メモなど",
+  "review_focus": "何をどうレビューしてほしいか。要件の抜け漏れ、優先度の妥当性、セキュリティ、テスト不足",
+  "context": "MVP開発中。まずはMarkdown表示を優先する。",
+  "output_level": "standard",
+  "notes": "P0-P3 の重要度順で見たい。"
 }
 ```
 
@@ -218,8 +248,9 @@ AIタスク分解の結果から、GitHub Issue形式のMarkdownを生成しま�
 ```json
 {
   "data": {
-    "id": 30,
-    "type": "code_review",
+    "feature": "code_review",
+    "mode": "demo",
+    "model": "gpt-4o-mini",
     "output_markdown": "# レビュー結果..."
   }
 }

@@ -564,6 +564,17 @@ docker compose --env-file C:\Users\asami\projects\ai-delivery-assistant-main\.en
 docker compose --env-file C:\Users\asami\projects\ai-delivery-assistant-main\.env.worktree exec backend php artisan migrate
 ```
 
+## Pull Request Naming
+
+PRタイトルは日本語で付けることを基本とする。
+
+必要に応じて `feat:` や `docs:` などの prefix を付けてもよいが、タイトル全体として日本語で内容が伝わるようにする。
+
+例:
+
+- `feat: AIレビュア機能を実装`
+- `docs: 着手前提案のチェック項目を明確化`
+
 ## Notes
 
 この運用では、複数Worktreeで同時にコードを書くことはできるが、Dockerでの画面確認は1つずつ行う。

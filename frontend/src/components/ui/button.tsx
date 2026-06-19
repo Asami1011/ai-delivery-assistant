@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 type BaseProps = {
   children: ReactNode;
   className?: string;
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "subtle";
 };
 
 type ButtonProps = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;
@@ -19,6 +19,8 @@ const variants = {
   primary: "border-neutral-950 bg-neutral-950 text-white hover:bg-neutral-800",
   secondary: "border-neutral-300 bg-white text-neutral-950 hover:bg-neutral-100",
   ghost: "border-transparent bg-transparent text-neutral-700 hover:bg-neutral-100",
+  subtle:
+    "border-neutral-300 bg-neutral-50 text-neutral-800 hover:border-neutral-400 hover:bg-neutral-100 hover:text-neutral-950",
 };
 
 const baseClass =

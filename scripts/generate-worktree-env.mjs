@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { existsSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { DEFAULT_PROJECT_NAME, normalizeBranchToDatabase } from "./worktree-config.mjs";
@@ -52,6 +53,7 @@ if (existsSync(options.output) && !options.force) {
 const content = [
   `COMPOSE_PROJECT_NAME=${DEFAULT_PROJECT_NAME}`,
   `DB_DATABASE=${database}`,
+  `APP_KEY=base64:${randomBytes(32).toString("base64")}`,
   "",
 ].join("\n");
 

@@ -42,6 +42,14 @@ ai-delivery-assistant/
 cp .env.example .env
 ```
 
+`.env` の `APP_KEY` には環境ごとに生成した値を設定してください。Docker が利用できる場合の生成例:
+
+```bash
+docker run --rm php:8.3-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
+```
+
+表示された値を `.env` の `APP_KEY=` に設定してから Compose を起動します。
+
 Dockerでローカル開発環境を起動します。
 
 ```bash
@@ -119,3 +127,4 @@ docker compose exec backend composer install
 - `OPENAI_API_KEY` は `.env` または本番環境のBackendホスティングサービスの環境変数にのみ設定します
 - `.env.example` には必要な環境変数名とローカル開発用のサンプル値だけを記載します
 - FrontendからOpenAI APIを直接呼び出さず、必ずLaravel Backend API経由で呼び出します
+- AI生成APIはIP単位で1分5回、1日20回に制限します。`AI_RATE_LIMIT_PER_MINUTE` と `AI_RATE_LIMIT_PER_DAY` で変更できます

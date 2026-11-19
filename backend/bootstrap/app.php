@@ -1,12 +1,13 @@
 <?php
 
+use App\Exceptions\AiGenerationException;
+use App\Support\ApiErrorResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use App\Exceptions\AiGenerationException;
-use App\Support\ApiErrorResponse;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -70,6 +71,18 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiErrorResponse::make(
                 message: 'HTTP method not allowed.',
                 status: 405,
+            );
+        });
+
+        $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiErrorResponse::make(
+                message: 'Too many requests.',
+                status: 429,
+                headers: $exception->getHeaders(),
             );
         });
 

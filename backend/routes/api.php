@@ -10,4 +10,4 @@ Route::get('/health', function () {
     ]);
 });
 
-Route::post('/ai/generate', GenerateAiController::class);
+Route::post('/ai/generate', GenerateAiController::class)->middleware('throttle:ai-generate');

@@ -51,6 +51,14 @@ Copy-Item .env.example .env
 
 `.env` はGit管理対象外です。APIキーや秘密情報は `.env` にのみ保存してください。
 
+`APP_KEY` は環境ごとに生成し、`.env` に設定してください。Docker を利用する場合は次のコマンドで生成できます。
+
+```bash
+docker run --rm php:8.3-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
+```
+
+Worktree で `.env.worktree` を使う場合は、`node scripts/generate-worktree-env.mjs` で新規生成すると固有の `APP_KEY` が入ります。既存の `.env.worktree` には別途生成した値を追加してください。
+
 ### 4. Dockerを起動
 
 Docker Desktopを起動してから、以下を実行します。

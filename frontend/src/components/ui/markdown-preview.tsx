@@ -13,8 +13,83 @@ function escapeHtml(text: string) {
 
 function renderInline(text: string) {
   return escapeHtml(text)
+    .replace(/`(.+?)`/g, "<code>$1</code>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+type LabeledLine = {
+  label: string;
+  value: string;
+};
+
+const reasonLabelParents: Record<string, string> = {
+  "優先度の理由": "優先度",
+  "見積理由": "想定工数",
+};
+
+function parseLabeledLine(line: string): LabeledLine | null {
+  const match = line.match(/^([^:：]+)([:：]\s*)(.+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    label: match[1].trim(),
+    value: match[3].trim(),
+  };
+}
+
+function renderLabeledLineGroups(lines: string[]) {
+  const groups: LabeledLine[][] = [];
+
+  for (const line of lines) {
+    const parsed = parseLabeledLine(line);
+
+    if (!parsed) {
+      groups.push([{ label: "", value: line }]);
+      continue;
+    }
+
+    const expectedParent = reasonLabelParents[parsed.label];
+    const currentGroup = groups.at(-1);
+    const currentPrimaryLabel = currentGroup?.[0]?.label;
+
+    if (expectedParent && currentGroup && currentPrimaryLabel === expectedParent) {
+      currentGroup.push(parsed);
+      continue;
+    }
+
+    groups.push([parsed]);
+  }
+
+  return `<ul>${groups
+    .map((group) => {
+      const [primary, ...secondary] = group;
+
+      if (!primary.label) {
+        return `<li>${renderInline(primary.value)}</li>`;
+      }
+
+      const primaryItem = `<strong>${renderInline(primary.label)}</strong>: ${renderInline(
+        primary.value,
+      )}`;
+
+      if (secondary.length === 0) {
+        return `<li>${primaryItem}</li>`;
+      }
+
+      const nestedItems = secondary
+        .map(
+          (item) =>
+            `<li><strong>${renderInline(item.label)}</strong>: ${renderInline(item.value)}</li>`,
+        )
+        .join("");
+
+      return `<li>${primaryItem}<ul>${nestedItems}</ul></li>`;
+    })
+    .join("")}</ul>`;
 }
 
 function renderMarkdown(content: string) {
@@ -24,11 +99,22 @@ function renderMarkdown(content: string) {
 
   let paragraphBuffer: string[] = [];
   let listBuffer: string[] = [];
+  let listType: "ul" | "ol" | null = null;
   let codeBuffer: string[] = [];
   let inCodeBlock = false;
 
+  const isLabeledLine = (line: string) =>
+    /^[^\s:：][^:：]{0,30}[:：]\s*.+$/.test(line) &&
+    !/^(https?:\/\/|#{1,3}\s|[-*]\s|\d+\.\s)/.test(line);
+
   const flushParagraph = () => {
     if (paragraphBuffer.length === 0) {
+      return;
+    }
+
+    if (paragraphBuffer.every((line) => isLabeledLine(line))) {
+      htmlParts.push(renderLabeledLineGroups(paragraphBuffer));
+      paragraphBuffer = [];
       return;
     }
 
@@ -37,14 +123,22 @@ function renderMarkdown(content: string) {
   };
 
   const flushList = () => {
-    if (listBuffer.length === 0) {
+    if (listBuffer.length === 0 || listType === null) {
+      return;
+    }
+
+    if (listType === "ul" && listBuffer.every((item) => isLabeledLine(item))) {
+      htmlParts.push(renderLabeledLineGroups(listBuffer));
+      listBuffer = [];
+      listType = null;
       return;
     }
 
     htmlParts.push(
-      `<ul>${listBuffer.map((item) => `<li>${renderInline(item)}</li>`).join("")}</ul>`,
+      `<${listType}>${listBuffer.map((item) => `<li>${renderInline(item)}</li>`).join("")}</${listType}>`,
     );
     listBuffer = [];
+    listType = null;
   };
 
   const flushCode = () => {
@@ -96,10 +190,25 @@ function renderMarkdown(content: string) {
     }
 
     const listMatch = trimmedLine.match(/^[-*]\s+(.*)$/);
+    const orderedListMatch = trimmedLine.match(/^\d+\.\s+(.*)$/);
 
     if (listMatch) {
       flushParagraph();
+      if (listType === "ol") {
+        flushList();
+      }
+      listType = "ul";
       listBuffer.push(listMatch[1].trim());
+      continue;
+    }
+
+    if (orderedListMatch) {
+      flushParagraph();
+      if (listType === "ul") {
+        flushList();
+      }
+      listType = "ol";
+      listBuffer.push(orderedListMatch[1].trim());
       continue;
     }
 

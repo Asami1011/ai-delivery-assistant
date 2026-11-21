@@ -20,6 +20,18 @@ import { cn } from "@/lib/utils";
 
 type FormErrors = Record<string, string>;
 
+type ParsedTaskBreakdownTask = {
+  number: string;
+  title: string;
+  summary: string;
+  priority: string;
+  priorityReason: string;
+  dependencies: string;
+  estimate: string;
+  estimateReason: string;
+  milestone: string;
+};
+
 const selectClass =
   "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm text-neutral-950 shadow-sm outline-none transition-colors focus:border-neutral-950 focus:ring-2 focus:ring-neutral-950/10";
 
@@ -122,6 +134,82 @@ function previewValue(field: AiFeatureFormField, value: string) {
   return value || "未入力";
 }
 
+function parseTaskBreakdownTasks(content: string) {
+  const tasks: ParsedTaskBreakdownTask[] = [];
+  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  let currentTask: ParsedTaskBreakdownTask | null = null;
+
+  const pushCurrentTask = () => {
+    if (currentTask) {
+      tasks.push(currentTask);
+    }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    const headingMatch = line.match(/^###\s+(\d+)\.\s+(.+)$/);
+
+    if (headingMatch) {
+      pushCurrentTask();
+      currentTask = {
+        number: headingMatch[1],
+        title: headingMatch[2],
+        summary: "",
+        priority: "",
+        priorityReason: "",
+        dependencies: "",
+        estimate: "",
+        estimateReason: "",
+        milestone: "",
+      };
+      continue;
+    }
+
+    if (!currentTask) {
+      continue;
+    }
+
+    const fieldMatch = line.match(/^-\s*([^:：]+)[:：]\s*(.+)$/);
+
+    if (!fieldMatch) {
+      continue;
+    }
+
+    const label = fieldMatch[1].trim();
+    const value = fieldMatch[2].trim();
+
+    switch (label) {
+      case "概要":
+        currentTask.summary = value;
+        break;
+      case "優先度":
+        currentTask.priority = value;
+        break;
+      case "優先度の理由":
+        currentTask.priorityReason = value;
+        break;
+      case "依存関係":
+        currentTask.dependencies = value;
+        break;
+      case "想定工数":
+        currentTask.estimate = value;
+        break;
+      case "見積理由":
+        currentTask.estimateReason = value;
+        break;
+      case "マイルストーン":
+        currentTask.milestone = value;
+        break;
+      default:
+        break;
+    }
+  }
+
+  pushCurrentTask();
+  return tasks;
+}
+
 export function AiFeatureForm({ config }: { config: AiFeatureFormConfig }) {
   const [values, setValues] = useState<AiFeatureFormValues>(() => buildValues(config));
   const [errors, setErrors] = useState<FormErrors>({});
@@ -177,6 +265,10 @@ export function AiFeatureForm({ config }: { config: AiFeatureFormConfig }) {
     label: field.label,
     value: previewValue(field, payload[field.name] ?? ""),
   }));
+  const taskBreakdownTasks =
+    result?.feature === "task_breakdown"
+      ? parseTaskBreakdownTasks(result.output_markdown)
+      : [];
 
   function updateField(key: string, nextValue: string) {
     const nextValues = { ...values, [key]: nextValue };
@@ -388,6 +480,156 @@ export function AiFeatureForm({ config }: { config: AiFeatureFormConfig }) {
             ) : null}
           </CardBody>
         </Card>
+
+        {!isSubmitting && result?.feature === "task_breakdown" && taskBreakdownTasks.length > 0 ? (
+          <Card className="min-w-0 overflow-hidden">
+            <CardHeader>
+              <CardTitle>WBS表示</CardTitle>
+            </CardHeader>
+            <CardBody className="overflow-hidden">
+              <div className="grid gap-3 md:hidden">
+                {taskBreakdownTasks.map((task) => (
+                  <div key={task.number} className="rounded-md border border-neutral-200 bg-white p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold tracking-wide text-neutral-500">
+                          {task.number}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold leading-6 text-neutral-900">
+                          {task.title}
+                        </p>
+                      </div>
+                      <div className="shrink-0 rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700">
+                        {task.priority || "未設定"}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid gap-3">
+                      <div className="grid gap-1">
+                        <p className="text-[11px] font-semibold tracking-wide text-neutral-500">概要</p>
+                        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-neutral-700">
+                          {task.summary}
+                        </p>
+                      </div>
+
+                      <div className="grid gap-1">
+                        <p className="text-[11px] font-semibold tracking-wide text-neutral-500">
+                          依存関係
+                        </p>
+                        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-neutral-700">
+                          {task.dependencies || "なし"}
+                        </p>
+                      </div>
+
+                      <div className="grid gap-1">
+                        <p className="text-[11px] font-semibold tracking-wide text-neutral-500">工数</p>
+                        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-neutral-700">
+                          {task.estimate || "未設定"}
+                        </p>
+                      </div>
+
+                      {task.priorityReason ? (
+                        <div className="grid gap-1">
+                          <p className="text-[11px] font-semibold tracking-wide text-neutral-500">
+                            優先度の理由
+                          </p>
+                          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-neutral-600">
+                            {task.priorityReason}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      {task.estimateReason ? (
+                        <div className="grid gap-1">
+                          <p className="text-[11px] font-semibold tracking-wide text-neutral-500">
+                            見積理由
+                          </p>
+                          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-neutral-600">
+                            {task.estimateReason}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      {task.milestone ? (
+                        <div className="grid gap-1">
+                          <p className="text-[11px] font-semibold tracking-wide text-neutral-500">
+                            マイルストーン
+                          </p>
+                          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-neutral-700">
+                            {task.milestone}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden md:block">
+                <div className="max-h-[22rem] overflow-auto rounded-md border border-neutral-200">
+                  <table className="min-w-max w-full table-auto border-collapse text-left text-sm">
+                  <thead className="sticky top-0 bg-neutral-100 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                    <tr>
+                      <th className="w-12 whitespace-nowrap border-b border-neutral-200 px-3 py-2">
+                        #
+                      </th>
+                      <th className="min-w-[24rem] border-b border-neutral-200 px-3 py-2">
+                        タスク
+                      </th>
+                      <th className="min-w-[16rem] border-b border-neutral-200 px-3 py-2">
+                        優先度
+                      </th>
+                      <th className="min-w-[16rem] border-b border-neutral-200 px-3 py-2">
+                        依存関係
+                      </th>
+                      <th className="min-w-[14rem] border-b border-neutral-200 px-3 py-2">
+                        工数
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-200 bg-white">
+                    {taskBreakdownTasks.map((task) => (
+                      <tr key={task.number}>
+                        <td className="whitespace-nowrap px-3 py-3 align-top text-neutral-500">
+                          {task.number}
+                        </td>
+                        <td className="min-w-[24rem] px-3 py-3 align-top">
+                          <div className="grid gap-1">
+                            <p className="font-semibold text-neutral-900">{task.title}</p>
+                            <p className="text-xs leading-5 text-neutral-600">{task.summary}</p>
+                            <p className="text-[11px] leading-5 text-neutral-500">
+                              {task.milestone ? `マイルストーン: ${task.milestone}` : null}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="min-w-[16rem] whitespace-normal break-words px-3 py-3 align-top text-neutral-700">
+                          {task.priority}
+                          {task.priorityReason ? (
+                            <p className="mt-1 whitespace-normal text-xs leading-5 text-neutral-500">
+                              {task.priorityReason}
+                            </p>
+                          ) : null}
+                        </td>
+                        <td className="min-w-[16rem] whitespace-normal break-words px-3 py-3 align-top text-neutral-700">
+                          {task.dependencies}
+                        </td>
+                        <td className="min-w-[14rem] whitespace-normal break-words px-3 py-3 align-top text-neutral-700">
+                          {task.estimate}
+                          {task.estimateReason ? (
+                            <p className="mt-1 whitespace-normal text-xs leading-5 text-neutral-500">
+                              {task.estimateReason}
+                            </p>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  </table>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        ) : null}
 
         <Card className="min-w-0 overflow-hidden">
           <CardHeader>

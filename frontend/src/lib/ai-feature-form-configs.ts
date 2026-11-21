@@ -275,7 +275,19 @@ export const taskBreakdownFormConfig: AiFeatureFormConfig = {
   readyTitle: "タスク分解の送信準備ができています。",
   readyMessage: "必須項目が入力されており、共通AI APIへ渡せる状態です。",
   expectedOutputTitle: "期待される出力",
-  expectedOutputs: ["タスク一覧", "優先度", "依存関係", "見積もり", "マイルストーン", "未確定事項"],
+  expectedOutputs: [
+    "タスク一覧",
+    "優先度",
+    "依存関係",
+    "見積もり",
+    "WBS表示",
+    "想定成果物",
+    "リスク・注意点",
+    "今回やらないこと",
+    "確認観点",
+    "マイルストーン",
+    "未確定事項",
+  ],
 };
 
 export const codeReviewFormConfig: AiFeatureFormConfig = {

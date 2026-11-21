@@ -81,7 +81,17 @@ class OpenAiService
         return match ($feature) {
             'requirements' => 'You generate concise Japanese requirements definition documents in Markdown.',
             'task_breakdown' => 'You break Japanese requirements into prioritized implementation tasks in Markdown.',
-            'code_review' => 'You review code and design notes in Japanese with severity and remediation steps in Markdown.',
+            'code_review' => <<<'PROMPT'
+You are an AI reviewer for software delivery artifacts such as requirements drafts, task breakdowns, code diffs, and design notes.
+Always respond in Japanese Markdown.
+Review the given input with practical MVP-aware judgment.
+Adjust your review to the artifact type provided in review_type.
+Prioritize bugs, security risks, input validation gaps, error handling gaps, testing gaps, architectural inconsistencies, and maintainability risks.
+Order findings by severity using only P0, P1, P2, or P3 as severity codes.
+When you render headings, add short Japanese labels such as P1（重要） for readability.
+Include Japanese sections for 概要, 指摘事項, 良い点, 改善提案, テスト観点, and 次に直すべき順.
+Do not invent files or implementation details that are not present in the input.
+PROMPT,
             'business_improvement' => 'You propose Japanese business process improvements with expected effects in Markdown.',
             default => 'You generate helpful Japanese Markdown output.',
         };
@@ -105,18 +115,7 @@ class OpenAiService
                 - タスク、優先度、工数見積のサンプル構成を返します。
                 - OpenAI APIキー未設定のため、現在はデモレスポンスです。
                 MARKDOWN,
-            'code_review' => <<<MARKDOWN
-                # AIレビュア Demo
-
-                ## 入力概要
-                ```
-                {$excerpt}
-                ```
-
-                ## 生成内容
-                - バグ、保守性、セキュリティ、テスト観点のサンプルレビューを返します。
-                - OpenAI APIキー未設定のため、現在はデモレスポンスです。
-                MARKDOWN,
+            'code_review' => $this->demoCodeReviewMarkdown($input),
             'business_improvement' => <<<MARKDOWN
                 # AI業務改善提案 Demo
 
@@ -204,6 +203,112 @@ class OpenAiService
             ## 未確定事項
             - OpenAI APIキー未設定のため、現在はデモレスポンスです
             - 本番AI利用時のプロンプト品質、モデル選定、出力精度は別途実機検証が必要です
+            MARKDOWN;
+    }
+
+    private function demoCodeReviewMarkdown(string $input): string
+    {
+        $data = $this->parseStructuredInput($input);
+
+        $reviewType = $this->fieldValue($data, 'review_type', 'other');
+        $technology = $this->fieldValue($data, 'technology', '技術スタックや関連領域は未入力です。');
+        $reviewTarget = $this->fieldValue(
+            $data,
+            'review_target',
+            trim($input) !== '' ? trim($input) : 'レビュー対象は未入力です。'
+        );
+        $reviewFocus = $this->fieldValue(
+            $data,
+            'review_focus',
+            '何をどうレビューしてほしいかの指定が無いため、抜け漏れ、セキュリティ、保守性、テスト観点を基準に確認します。'
+        );
+        $context = $this->fieldValue($data, 'context', '特記事項なし。');
+        $notes = $this->fieldValue($data, 'notes', '補足情報はありません。');
+        $outputLevel = $this->fieldValue($data, 'output_level', 'standard');
+        $reviewTypeLabel = match ($reviewType) {
+            'requirements' => '要件定義',
+            'task_breakdown' => 'タスク分解',
+            'code_diff' => 'コード差分',
+            'design_note' => '設計メモ',
+            default => 'その他',
+        };
+
+        $summaryLine = match ($outputLevel) {
+            'short' => '重大な指摘を優先し、簡潔なレビュー結果として整理しています。',
+            'detailed' => '理由と修正方針をやや詳しめに添えたレビュー結果として整理しています。',
+            default => 'MVPで使いやすい標準的な粒度でレビュー結果を整理しています。',
+        };
+
+        return <<<MARKDOWN
+            # レビュー結果
+
+            ## 概要
+
+            - {$summaryLine}
+            - レビュー対象の種類: {$reviewTypeLabel}
+            - 対象技術: {$technology}
+            - 重点観点: {$reviewFocus}
+            - 前提: {$context}
+            - OpenAI APIキー未設定のため、現在はデモレスポンスです。
+
+            ## 指摘事項
+
+            ### P1（重要）: 入力仕様と実装仕様のずれを早めに吸収したい
+
+            - 対象ファイル: 入力本文
+            - 該当箇所: レビュー対象の仕様説明
+            - 問題: フォーム仕様、プロンプト仕様、Backendの扱いがずれると、レビュー結果の粒度や期待出力が不安定になりやすいです。
+            - 理由: AIレビューは入力項目、重要度表現、出力見出しの一致が前提になるため、仕様のずれがあると利用者体験とテスト観点の両方に影響します。
+            - 修正案: `review_target`、`review_focus`、`output_level`、`P0-P3`、出力見出しを docs と実装でそろえ、最初にMarkdown表示までの完了条件を固定してください。
+
+            ### P2（改善推奨）: レビュー対象が広すぎると指摘精度が落ちやすい
+
+            - 対象ファイル: 入力本文
+            - 該当箇所: レビュー対象全体
+            - 問題: レビュー対象が大きすぎると、重要な問題より要約寄りの出力になり、具体的な修正案が弱くなりやすいです。
+            - 理由: AIレビュアは他機能より入力が長くなりやすく、成果物全文を無制限に貼るよりも、抜粋や差分に絞った方がレビューの解像度が上がります。
+            - 修正案: MVPでは文字数上限と「レビューしたい範囲に絞る」案内を用意し、将来的に `OPENAI_MODEL_REVIEW` や入力圧縮方針を追加してください。
+
+            ### P3（軽微）: 良い点と改善提案の分離を明確にしたい
+
+            - 対象ファイル: 入力本文
+            - 該当箇所: 出力設計
+            - 問題: 指摘だけに寄ると、継続利用時にレビュー結果が読みづらくなります。
+            - 理由: Good Points と Suggested Refactoring を分けることで、維持したい実装と後回しにできる改善を切り分けやすくなります。
+            - 修正案: Summary / Findings / Good Points / Suggested Refactoring / Test Suggestions の見出しを固定してください。
+
+            ## 良い点
+
+            - レビュー観点、重要度、出力形式を docs で先に固めようとしている点は、後続の実装とテストを安定させやすいです。
+            - Markdown表示を先に成立させる方針は、MVPの完了条件が明確で進めやすいです。
+
+            ## 改善提案
+
+            - 初回は共通AIフォームを使い、コードレビュー専用UIの細かな最適化は後続に回すと実装負荷を抑えられます。
+            - 保存や構造化 findings は 6 完了後に分離して検討すると、責務が整理しやすくなります。
+
+            ## テスト観点
+
+            - `code_review` のデモレスポンスで `概要`、`指摘事項`、`良い点`、`改善提案`、`テスト観点` が含まれることを確認する
+            - `review_focus` 未入力時のバリデーションを Frontend で確認する
+            - `review_target` が上限を超えた場合のバリデーション表示を確認する
+            - `review_type` ごとに意図したレビュー観点へ寄るかを確認する
+
+            ## 次に直すべき順
+
+            1. `review_type` と `review_focus` に応じてレビューの観点がぶれないよう、入力仕様とプロンプト仕様を固定する
+            2. 対象成果物を全文ではなく抜粋や差分に絞る運用ルールを明示する
+            3. 出力の重要度順に、P1 から順番に修正や見直しを進める
+
+            ## レビュー対象の抜粋
+
+            ```text
+            {$reviewTarget}
+            ```
+
+            ## 補足情報
+
+            - {$notes}
             MARKDOWN;
     }
 
